@@ -1,36 +1,33 @@
 import { observable, action, computed } from 'mobx';
+import { ThunkAction } from "../api/models/fn";
 
-/**
- * Represents the user interaction when adding a To-Do.
- */
+/** Represents the composite user interaction of adding a To-Do. */
 class AddTodo {
 
-    @observable
-    private _taskName = "";
+    @observable private _taskName = "";
 
     constructor(private _injected: { 
+        /** Injected strategy for adding a to-do. */
         addIncompleteTodo: (taskName: string) => void;
     }) {}
 
-    public get taskName() { return this._taskName; }
+    public get taskName(): string { 
+        return this._taskName; 
+    }
 
-    @action
-    public updateTaskName(taskName: string) {
+    /** Update the candidate todo task name. When populated with more than whitespace the user will have the option to add a todo with with name. */
+    @action public updateTaskName(taskName: string): void {
         this._taskName = taskName;
     }
 
-    /**
-     * The action to add a to-do is conditionally available based on the state of the task.
-     */
-    @computed
-    public get addTodoMaybe() {
+    /** The action to add a to-do is conditionally available when the taskName is sufficiently populated. */
+    @computed public get addTodoMaybe(): null | ThunkAction {
         return (this._taskName || "").trim().length > 0
             ? () => this._addTodo()
             : null;
     }    
 
-    @action
-    private _addTodo() {                        
+    @action private _addTodo(): void {                        
         this._injected.addIncompleteTodo(this._taskName);
         this._taskName = "";
     }

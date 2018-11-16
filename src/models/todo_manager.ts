@@ -7,19 +7,31 @@ import {
     PausedTodo,
     Todo,
     isComplete,
-    minutesLoggedForTodo,
+    minutesLogged,
+} from "./todo";
+
+import {
+    TodoStateTransition,
     complete,
     pause,
     start,
     create
-} from "./todo";
+} from "./todo.transitions";
 
 import AddTodo = require("./add_todo");
 
+import { Action } from "../api/models/fn";
 import { partition } from "../api/models/array";
-import { sum } from "../api/models/numbers";
+import { sumArray } from "../api/models/numbers";
 import { msPerSecond } from "../api/models/date";
 
+/**
+ * Top level view model managing all Todo interactions. 
+ * * Adding a Todo
+ * * Todo list
+ * * Todo state transitions
+ * * Totals and Stats
+ */
 class TodoManager {
 
     @observable private readonly _todoList: Todo[] = [];
@@ -37,11 +49,15 @@ class TodoManager {
         );
     }
 
-    public get todoTimeClock() {
+    /** Current time-click (if there is one - if no to-do is in progress this is null). */
+    public get todoTimeClock(): null | TodoTimeClock {
         return this._todoTimeClock;
     }
-
-    @computed public get todoLists() {
+    
+    @computed public get todoLists(): {
+        completed: null | CompleteTodo[];
+        notCompleted: null | (NeverStartedTodo | PausedTodo | InProgressTodo)[]
+    } {
         const [completed, notCompleted] = partition<CompleteTodo, NeverStartedTodo | PausedTodo | InProgressTodo>(this._todoList, isComplete);
         return { 
             completed: completed.length > 0 ? completed : null, 
@@ -49,30 +65,34 @@ class TodoManager {
         };
     }
 
-    @computed public get totalMinutesLogged() {
+    @computed public get totalMinutesLogged(): number {
         const currentTime = this._currentTime;
-        return this._todoList
-            .map(todo =>
-                minutesLoggedForTodo({ currentTime, todo })
+        return sumArray(
+            this._todoList.map(todo =>
+                minutesLogged({ currentTime, todo })
             )
-            .reduce<number>(sum, 0);
+        );
     }
 
-    @computed public get totalPauses() {
-        return this._todoList
-            .map(todo => todo.pauseCount)
-            .reduce<number>(sum, 0);
+    /** The total number of times that all todos have been paused. */
+    @computed public get totalPauses(): number {
+        return sumArray(
+            this._todoList.map(todo => todo.pauseCount)
+        );          
     }
 
-    public complete(todo: InProgressTodo) {
+    /** Complete the in-progress todo. */
+    public complete(todo: InProgressTodo): void {
         this._updateTodoState(todo, complete({ todo, currentTime: this._currentTime }));
     }
 
-    public pause(todo: InProgressTodo) {
+    /** Pause the in-progress todo. */
+    public pause(todo: InProgressTodo): void {
         this._updateTodoState(todo, pause({ todo, currentTime: this._currentTime }));
     }
 
-    @computed public get startMaybe() {
+    /** Start a Paused | Never Started Todo when there is no currently running timeclock. */
+    @computed public get startMaybe(): null | Action<PausedTodo | NeverStartedTodo> {
         const todoTimeClock = this._todoTimeClock;
         return todoTimeClock === null
             ? (todo: PausedTodo | NeverStartedTodo) => 
@@ -83,15 +103,21 @@ class TodoManager {
             : null;
     }
 
-    public get addTodo() { return this._addTodo; }
+    /** Composite Add-Todo view model. */
+    public get addTodo(): AddTodo { return this._addTodo; }
 
-    @action private _updateCurrentTime() {
+    @action private _updateCurrentTime(): void {
         this._currentTime = new Date();
     }
 
+    /** 
+     * Transition one to-do to a new state.
+     * 
+     * **NOTE** State transitions always impact the state of the running timeclock.
+     */
     @action private _updateTodoState<T extends Todo>(
         originalTodo: T, 
-        { todo, todoTimeClock }: { todo: Todo; todoTimeClock: TodoTimeClock | null }
+        { todo, todoTimeClock }: TodoStateTransition<Todo, TodoTimeClock | null>
     ): void {
         const idx = this._todoList.indexOf(originalTodo);
         if (idx < 0)

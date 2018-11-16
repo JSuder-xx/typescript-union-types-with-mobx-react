@@ -1,29 +1,45 @@
 import { Zero, NonZero, succ } from "../api/models/numbers";
 import { minutesElapsed } from "../api/models/date";
 
-/**
- * A running clock for a Todo item. 
- */
+/** A Todo item - which can be in one of four states/classifications. */
+export type Todo = 
+    NeverStartedTodo 
+    | PausedTodo 
+    | InProgressTodo 
+    | CompleteTodo;
+
+/** Running clock for a Todo item. */
 export type TodoTimeClock = {
-    /**  */
     todo(): InProgressTodo;
     readonly startTime: Date;
 }
 
+/** Returns the total minutes for the timeclock entry which includes the historical todo minutes logged and the current elapsed time on the timer. */
 export const totalMinutesLoggedForTimeClock = ({ currentTime, todoTimeClock }: {
     currentTime: Date;
     todoTimeClock: TodoTimeClock;
 }): number =>
-     todoTimeClock.todo().minutesLogged 
-        + minutesElapsed({ currentTime, startTime: todoTimeClock.startTime });
+    todoTimeClock.todo().minutesLoggedHistorically 
+    + minutesElapsed({ currentTime, startTime: todoTimeClock.startTime });
 
-export type BaseTodo = Readonly<{
+/** Return the minutes logged for the todo. */
+export const minutesLogged = ({ currentTime, todo }: {
+    currentTime: Date;
+    todo: Todo;
+}): number =>
+    isInProgress(todo)     
+        ? totalMinutesLoggedForTimeClock({ todoTimeClock: todo.todoTimeClock, currentTime })
+        : todo.minutesLoggedHistorically;
+        
+/** Properties common to all Todo representations. */
+type BaseTodo = Readonly<{
     id: number;
     taskName: string;
-    minutesLogged: number;
+    minutesLoggedHistorically: number;    
     pauseCount: Zero | NonZero;
 }>
 
+/** A Todo item that is incomplete, not currently being work, and has never been paused. */
 export type NeverStartedTodo = BaseTodo & Readonly<{ 
     todoTimeClock: null;
     isComplete: false; 
@@ -35,6 +51,7 @@ export function isNeverStarted(todo: Todo): todo is NeverStartedTodo {
         && !todo.isComplete;
 }
 
+/** A Todo item that is incomplete, not currently being worked, and has been paused at some point. */
 export type PausedTodo = BaseTodo & Readonly<{ 
     todoTimeClock: null;
     isComplete: false; 
@@ -47,6 +64,7 @@ export function isPaused(todo: Todo): todo is PausedTodo {
         && !todo.isComplete;
 }
 
+/** A Todo item that is incomplete and currently being worked. */
 export type InProgressTodo = BaseTodo & Readonly<{
     todoTimeClock: TodoTimeClock;
     isComplete: false;
@@ -57,6 +75,7 @@ export function isInProgress(todo: Todo): todo is InProgressTodo {
         && !todo.isComplete;
 }
 
+/** A Todo item that is complete. */
 export type CompleteTodo = BaseTodo & Readonly<{
     todoTimeClock: null;
     isComplete: true;
@@ -65,81 +84,3 @@ export type CompleteTodo = BaseTodo & Readonly<{
 export function isComplete(todo: Todo): todo is CompleteTodo {
     return todo.isComplete;
 }
-
-export type Todo = NeverStartedTodo | PausedTodo | InProgressTodo | CompleteTodo;
-
-let _id = 1;
-export function create(taskName: string): NeverStartedTodo {
-    return {
-        id: _id++,
-        taskName,
-        minutesLogged: 0,
-        todoTimeClock: null,
-        isComplete: false,
-        pauseCount: 0
-    };
-}
-
-export function complete({ currentTime, todo }: {
-    currentTime: Date;
-    todo: InProgressTodo;
-}): {
-    todo: CompleteTodo;
-    todoTimeClock: null;
-} {
-    return {
-        todoTimeClock: null,
-        todo: {
-            ...todo,
-            minutesLogged: totalMinutesLoggedForTimeClock({ todoTimeClock: todo.todoTimeClock, currentTime }),
-            todoTimeClock: null,
-            isComplete: true
-        }
-    };
-}
-
-export function pause({ currentTime, todo }: {
-    currentTime: Date;
-    todo: InProgressTodo;
-}): {
-    todoTimeClock: null;
-    todo: PausedTodo;
-} {
-    return {
-        todoTimeClock: null,
-        todo: {
-            ...todo,
-            todoTimeClock: null,
-            pauseCount: succ(todo.pauseCount),
-            minutesLogged: totalMinutesLoggedForTimeClock({ todoTimeClock: todo.todoTimeClock, currentTime }) 
-        }
-    }
-}
-
-export function start({ todo }: {
-    todo: PausedTodo | NeverStartedTodo;
-    todoTimeClock: null;
-}): {
-    todoTimeClock: TodoTimeClock;
-    todo: InProgressTodo;
-} {
-    let inProgressTodo: InProgressTodo;
-    const todoTimeClock: TodoTimeClock = {
-        startTime: new Date(),
-        todo: () => inProgressTodo
-    }
-    inProgressTodo = {
-        ...todo,
-        todoTimeClock
-    };
-    
-    return { todoTimeClock, todo: inProgressTodo };
-}
-
-export const minutesLoggedForTodo = ({ currentTime, todo }: {
-    currentTime: Date;
-    todo: Todo;
-}): number =>
-    isInProgress(todo)     
-        ? totalMinutesLoggedForTimeClock({ todoTimeClock: todo.todoTimeClock, currentTime })
-        : todo.minutesLogged;

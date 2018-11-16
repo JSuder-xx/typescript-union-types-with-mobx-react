@@ -12,33 +12,22 @@ class TodoList extends React.Component<{ todoManager: TodoManager }> {
         const { todoLists } = todoManager;       
         return (
             <div>
-                {
-                    (todoLists.notCompleted === null)
-                    ? []
-                    : [
-                        <h3>Working</h3>,
-                        list(todoLists.notCompleted)       
-                    ]
-                }
-                {
-                    (todoLists.completed === null)
-                    ? []
-                    : [
-                        <h3>Completed</h3>,
-                        list(todoLists.completed)       
-                    ]
-                }
+                {list("Working", todoLists.notCompleted)}
+                {list("Completed", todoLists.completed)}
             </div>
         );    
 
-        function list(todos: Todo[]) {
-            return todos.length === 0
-                ? <em>None</em>
-                : <ul>
-                    {todos.map(todo =>
-                        <TodoItem key={todo.id} todo={todo} todoManager={todoManager} />
-                    )}
-                </ul>;
+        function list(header: string, todos: null | Todo[]) {
+            return todos === null
+                ? []
+                : [
+                    <h3>{header}</h3>,
+                    <ul>
+                        {todos.map(todo =>
+                            <TodoItem key={todo.id} todo={todo} todoManager={todoManager} />
+                        )}
+                    </ul>    
+                ];
         }
     }
 }

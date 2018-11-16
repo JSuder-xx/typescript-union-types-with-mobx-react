@@ -1,14 +1,16 @@
 import * as React from 'react';
 import { observer } from 'mobx-react';
 
-import { Todo, isPaused, isInProgress } from "../models/todo";
 import TodoManager = require("../models/todo_manager");
 
 const fieldAsRow = (label: string, value: string) =>
-    (<tr>
+    <tr>
         <th>{label}</th>
         <td>{value}</td>
-    </tr>);
+    </tr>;
+
+const arrayCountString = (items: null | any[]) =>
+    items === null ? "" : items.length.toString();
 
 @observer
 class Overview extends React.Component<{ todoManager: TodoManager }> {    
@@ -20,14 +22,8 @@ class Overview extends React.Component<{ todoManager: TodoManager }> {
                 <table>
                     <tbody>
                     {fieldAsRow("Minutes Logged", totalMinutesLogged.toFixed(1))}
-                    {fieldAsRow(
-                        "# Complete", 
-                        todoLists.completed === null ? "" : todoLists.completed.length.toString()
-                    )}                
-                    {fieldAsRow(
-                        "# Incomplete", 
-                        todoLists.notCompleted === null ? "" : todoLists.notCompleted.length.toString()
-                    )}                
+                    {fieldAsRow("# Complete", arrayCountString(todoLists.completed))}                
+                    {fieldAsRow("# Incomplete", arrayCountString(todoLists.notCompleted))}                
                     {fieldAsRow("# Interruptions", totalPauses.toString())}                
                     </tbody>
                 </table>

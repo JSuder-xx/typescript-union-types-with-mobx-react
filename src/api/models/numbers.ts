@@ -38,3 +38,5 @@ export const sumOfCardinal = <TLeft extends Zero | NonZero, TRight extends Zero 
 
 export const sum = (left: number, right: number): number =>
     left + right;
+
+export const sumArray = (nums: number[]): number => nums.reduce(sum, 0);
