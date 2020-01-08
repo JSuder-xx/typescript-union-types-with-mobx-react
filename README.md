@@ -1,4 +1,4 @@
-# TypeScript Pseudo Dependent Typing Example with Mobx & React
+# TypeScript Union Types with Mobx & React
 
 # Static Typing Stragegies 
 ## Discriminated Unions 
@@ -14,7 +14,7 @@ This information representation is fraught with opportunities for improper usage
 
 The view model may protect itself from inappropriate access by throwing exceptions but this is terribly opaque and leads to the likelihood of run-time faults. 
 
-Run-time faults can be avoided altogether by employing Discriminated Unions to represent the valid states in such a way that meaning and usage are explicit and compiler verifiable.
+Run-time faults can be avoided altogether by employing Discriminated Unions (AKA Variants, Tagged Unions, Sum Types, Enumerations) to represent the valid states in such a way that meaning and usage are explicit and compiler verifiable.
 
 Consider instead the Mobx code below
 ```TypeScript
@@ -39,16 +39,6 @@ This can be modeled in a type-safe fashion with
 ```TypeScript
 @computed doAwesomeThing: null | () => void;
 ```
-
- 
-## Dependent Typing - Cases By Values
-Object oriented code is no stranger to representing Cases with data types (the [State Pattern]( https://www.geeksforgeeks.org/state-design-pattern/)  concerns itself explicitly with such concerns). A class is a "classificaiton" of thing; a set with members (object instances of the class).
-
-An OO class in a nominal type system is 
-* A named type where the name has semantic significance i.e. significance is related to the name.
-* A _structure_ of data with accompanying _behaviors_.
-
-_Work in progress (i.e. more to come)_
 
 
 # Installation
