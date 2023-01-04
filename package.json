@@ -20,7 +20,7 @@
     "@types/react-dom": "^15.5.1",
     "awesome-typescript-loader": "^3.2.1",
     "typescript": "^2.4.2",
-    "webpack": "^3.0.0",
+    "webpack": "^5.75.0",
     "webpack-dev-server": "^2.11.5"
   },
   "dependencies": {
